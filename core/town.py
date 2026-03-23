@@ -4,7 +4,8 @@ class Town:
         self.facilities = {
             "school": 1,  # 数学・論理（構造に影響）
             "market": 1,  # 経済・交渉（報酬に影響）
-            "lab": 1      # 物理・化学（将来の拡張用）
+            "lab": 1,      # 物理・化学（将来の拡張用）
+            "workshop": 1  # 製作（クラフトに影響）
         }
 
     def get_logic_bonus(self):
@@ -14,6 +15,10 @@ class Town:
     def get_economy_bonus(self):
         # 市場レベルが上がるほど報酬倍率が増える
         return self.facilities["market"] * 0.1 # レベル1ごとに+10%
+    
+    def get_craft_bonus(self):
+    # 工房レベルに応じて、製作時の素材消費を抑えるなどのボーナス
+        return self.facilities["workshop"] * 0.05
 
     def get_upgrade_cost(self, f_name):
         # レベルが上がるほどコストが増える計算式

@@ -45,17 +45,21 @@ class Area:
 
     def resolve_exploration(self, player):
         roll = random.random()
-        
-        # スキル「survival」による戦闘力補正
+        job_stats = player.get_job_stats()
         survival_bonus = player.skills["survival"] * 2
-        # スキル「greed」による報酬補正
-        greed_multiplier = 1.0 + (player.skills["greed"] * 0.2)
+        # スキル「survival」による戦闘力補正
+        # survival_bonus = player.skills["survival"] * 2
+        # スキル「greed」は削除
+        # greed_multiplier = 1.0 + (player.skills["greed"] * 0.2)
 
         if roll < 0.4: # 戦闘
             self.last_event = "MONSTER BATTLE"
-            power = player.level + (player.base_logic * 0.5) + survival_bonus
+            wp_pwr = player.weapon.power if player.weapon else 0
+            ar_pwr = player.armor.power if player.armor else 0
+            power = player.level + (player.base_logic * 0.5) + survival_bonus + wp_pwr + ar_pwr # 装備の影響も加える
+            # power = player.level + (player.base_logic * 0.5) + survival_bonus
             if power >= self.difficulty:
-                gold = int(self.reward_base * 1.5 * greed_multiplier)
+                gold = int(self.reward_base * 1.5)
                 mat = random.randint(1, 3) if random.random() < 0.8 else 1 # 戦闘勝利で素材が出る確率を80%に
                 return {"gold": gold, "exp": 20, "material": mat, "msg": "BATTLE WIN!"}
             else:
@@ -63,7 +67,7 @@ class Area:
         
         elif roll < 0.7: # お宝
             self.last_event = "TREASURE FOUND"
-            gold = int(self.reward_base * 2.0 * greed_multiplier)
+            gold = int(self.reward_base * 2.0)
             mat = random.randint(3, 8) # お宝からは素材が出やすい
             return {"gold": gold, "exp": 10, "material": mat, "msg": "JACKPOT!"}
         

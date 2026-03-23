@@ -29,44 +29,42 @@ class App:
             self.update_explore()
 
     def update_town(self):
-        # 1. 内部関数の定義
         def try_upgrade(f_name, label):
             g_cost = self.town.get_upgrade_cost(f_name)
             m_cost = self.town.facilities[f_name] * 2
-            
             if self.player.gold < g_cost:
                 self.msg = f"NEED {g_cost}G"
             elif self.player.material < m_cost:
-                self.msg = f"NEED {m_cost}M (MATERIAL)"
+                self.msg = f"NEED {m_cost}M"
             else:
                 if self.town.upgrade(f_name, self.player):
                     self.msg = f"{label} UPGRADED!"
 
-        # 2. 【重要】定義した関数をここで呼び出す
-        if pyxel.btnp(pyxel.KEY_S):
-            try_upgrade("school", "SCHOOL")
-        if pyxel.btnp(pyxel.KEY_M):
-            try_upgrade("market", "MARKET")
+        # 入力処理はすべてupdateに集約
+        if pyxel.btnp(pyxel.KEY_S): try_upgrade("school", "SCHOOL")
+        if pyxel.btnp(pyxel.KEY_M): try_upgrade("market", "MARKET")
         
-        # スキル振り分け（ここは今のままでOK）
+        # ジョブチェンジ
+        if pyxel.btnp(pyxel.KEY_J):
+            current_idx = self.player.unlocked_jobs.index(self.player.current_job)
+            next_idx = (current_idx + 1) % len(self.player.unlocked_jobs)
+            self.player.current_job = self.player.unlocked_jobs[next_idx]
+            self.msg = f"JOB: {self.player.current_job}"
+
+        # スキル振り分け（1回にまとめる）
         if self.player.skill_points > 0:
             if pyxel.btnp(pyxel.KEY_Z):
                 self.player.skills["analysis"] += 1
                 self.player.skill_points -= 1
                 self.msg = "ANALYSIS UP!"
-            # ... X, C も同様に ...
-        
-        # スキル振り分け（新規：ポイントがある時のみ）
-        if self.player.skill_points > 0:
-            if pyxel.btnp(pyxel.KEY_Z): # Analysis
-                self.player.skills["analysis"] += 1
-                self.player.skill_points -= 1
-            if pyxel.btnp(pyxel.KEY_X): # Survival
+            elif pyxel.btnp(pyxel.KEY_X):
                 self.player.skills["survival"] += 1
                 self.player.skill_points -= 1
-            if pyxel.btnp(pyxel.KEY_C): # Greed
-                self.player.skills["greed"] += 1
+                self.msg = "SURVIVAL UP!"
+            elif pyxel.btnp(pyxel.KEY_C):
+                self.player.skills["crafting"] += 1
                 self.player.skill_points -= 1
+                self.msg = "CRAFTING UP!"
 
     def update_create(self):
         if pyxel.btnp(pyxel.KEY_A):
@@ -130,56 +128,34 @@ class App:
         # 下部メッセージ
         pyxel.text(5, 110, self.msg, 10)
 
-    # def draw_town(self):
-    #     pyxel.text(10, 30, "--- TOWN FACILITIES ---", 3)
-    #     s_lv = self.town.facilities["school"]
-    #     s_cost = self.town.get_upgrade_cost("school")
-    #     pyxel.text(10, 50, f"[S] SCHOOL LV:{s_lv} (COST:{s_cost})", 7)
-        
-    #     m_lv = self.town.facilities["market"]
-    #     m_cost = self.town.get_upgrade_cost("market")
-    #     pyxel.text(10, 60, f"[M] MARKET LV:{m_lv} (COST:{m_cost})", 7)
-    #     pyxel.text(10, 90, "1:TOWN  2:GUILD  3:GATE", 5)
-
-    #     # (既存の施設表示は維持)
-    #     pyxel.text(10, 80, f"--- SKILLS (PTS:{self.player.skill_points}) ---", 10)
-    #     pyxel.text(10, 90, f"[Z] ANALYSIS (LV:{self.player.skills['analysis']})", 7)
-    #     pyxel.text(10, 100, f"[X] SURVIVAL (LV:{self.player.skills['survival']})", 7)
-    #     pyxel.text(10, 110, f"[C] GREED    (LV:{self.player.skills['greed']})", 7)
 
     def draw_town(self):
-        # --- 左側：TOWN FACILITIES ---
+        # 施設表示
         pyxel.text(10, 25, "- FACILITIES -", 3)
-        
-        s_lv = self.town.facilities["school"]
-        s_cost = self.town.get_upgrade_cost("school")
-        pyxel.text(10, 40, f"[S] SCHOOL", 7)
-        pyxel.text(10, 48, f"    LV:{s_lv} C:{s_cost}", 13)
-        
-        m_lv = self.town.facilities["market"]
-        m_cost = self.town.get_upgrade_cost("market")
-        pyxel.text(10, 60, f"[M] MARKET", 7)
-        pyxel.text(10, 68, f"    LV:{m_lv} C:{m_cost}", 13)
-        
-        # --- 右側：SKILLS ---
+        # (SCHOOL, MARKETの表示...中略)
+
+        # スキル表示
         pyxel.text(90, 25, "- SKILLS -", 10)
         pyxel.text(90, 33, f" POINTS: {self.player.skill_points}", 6)
         
-        skills = [
-            ("Z", "ANALYSIS", "analysis"),
-            ("X", "SURVIVAL", "survival"),
-            ("C", "GREED", "greed")
-        ]
-        
+        skills = [("Z", "ANALYSIS", "analysis"), ("X", "SURVIVAL", "survival"), ("C", "CRAFTING", "crafting")]
         for i, (key, name, s_key) in enumerate(skills):
             y_pos = 45 + (i * 18)
             col = 7 if self.player.skill_points > 0 else 12
             pyxel.text(90, y_pos, f"[{key}] {name}", col)
             pyxel.text(90, y_pos + 8, f"    LV: {self.player.skills[s_key]}", 13)
 
-        # 下部操作ガイド
+        # ジョブ表示（中央下部にまとめる）
+        curr = self.player.current_job
+        lv = self.player.job_levels[curr]
+        exp = self.player.job_exp[curr]
+        pyxel.text(10, 80, f"JOB: {curr} (Lv.{lv})", 14)
+        pyxel.rect(10, 88, 140, 2, 1)
+        pyxel.rect(10, 88, 140 * (exp / 100), 2, 14)
+
+        # 操作ガイド（最後に1つだけ）
         pyxel.rect(0, 100, 160, 1, 1)
-        pyxel.text(15, 103, "1:TOWN   2:GUILD   3:GATE", 5)
+        pyxel.text(10, 103, "1:TOWN 2:GUILD 3:GATE [J]:JOB", 5)
 
     def draw_create(self):
         pyxel.text(10, 30, "--- ADVENTURER GUILD ---", 14)

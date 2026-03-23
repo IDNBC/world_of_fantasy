@@ -1,0 +1,14 @@
+world_of_fantasy/
+├── main.py              # ゲームの起動・入力・描画（Pyxel依存）
+├── core/                # 【重要】ゲームの「心臓部」。Pyxelに依存しない純粋なロジック
+│   ├── engine.py        # 探索・判定ロジック
+│   ├── player.py        # プレイヤーの状態管理
+│   ├── town.py          # 街の成長ロジック
+│   └── models.py        # ←【ココ！】装備・アイテム・定数の定義
+├── data/                # 【拡張用】CSVやJSONでアイテムリストを管理する場合
+└── assets/              # 画像・音源データ
+
+
+requirements
+
+pip install pyxel 
